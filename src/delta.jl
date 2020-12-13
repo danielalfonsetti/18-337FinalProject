@@ -1,4 +1,3 @@
-
 using KernelDensity
 
 # https://www.sciencedirect.com/science/article/pii/S0377221712008995
@@ -17,7 +16,6 @@ function calc_delta(Y)
         N = length(Y)
         fy = kde(Y) # using normal kernel by default
         return fy
-
 end
 
 ##############
@@ -93,7 +91,6 @@ d_hat *= (1/(2*N))
 # https://github.com/JuliaStats/KernelDensity.jl
 
 
-## -
 
 # Iterate over classes.
 # For each class, get the rankins
