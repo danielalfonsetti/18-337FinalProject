@@ -95,6 +95,8 @@ for N in [100, 300, 1000, 3000, 10000, 30000]
     end
 end
 
+
+
 # X = 1:1:10
 # spectrum = abs.(fft(X)).^2
 # V1 = sum(spectrum[1:M])
