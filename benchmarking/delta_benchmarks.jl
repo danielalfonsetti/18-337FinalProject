@@ -1,6 +1,5 @@
 using Plots, BenchmarkTools, Profile
 
-
 include("../src/delta.jl")
 include("../src/util.jl")
 
@@ -11,19 +10,21 @@ include("../src/util.jl")
 # Test independence
 X = hcat([i for i in 1:9], [1 for i in 1:9])
 Y = [100, 200, 300, 400, 500, 600, 700, 800, 900]
-deltas, adjusted_deltas, adjusted_deltas_low, adjusted_deltas_high = delta_moment_analyze(X, Y)
+deltas, adjusted_deltas, adjusted_deltas_low, adjusted_deltas_high = delta_moment(X, Y, num_resamples=500)
 
 ###################################
-# Try to recreate figure 3 Plischke (2013)
+# Try to recreate figure 3 from Plischke et al. (2013)
 
 sample_sizes = 2 .^ [i for i in 9:14]
 fig3_deltas = zeros(length(sample_sizes))
 fig3_adjusted_deltas = zeros(length(sample_sizes))
 fig3_adj_delta_95low = zeros(length(sample_sizes))
 fig3_adj_delta_95high = zeros(length(sample_sizes))
+
 for (index, sample_size) in enumerate(sample_sizes)
+        println(index, " out of ", length(sample_sizes))
         X, Y = create_ishigami_samples(sample_size)
-        res = delta_moment_analyze(X[:,4], Y, Ygrid_length=110, num_classes=10)
+        res = delta_moment(X[:,4], Y, Ygrid_length=2048, num_classes=10)
         fig3_deltas[index], fig3_adjusted_deltas[index], fig3_adj_delta_95low[index], fig3_adj_delta_95high[index] = res[1][1], res[2][1], res[3][1], res[4][1]
 end
 
@@ -49,21 +50,19 @@ plot!(
         xticks = (sample_sizes, sample_sizes),
         legend=:topright,
 )
+savefig("./18337FinalProject/plots/delta_ishigami.png")
 
-
-# Trend is correct, but the scale is off. Possible due to
-
+# Trend is correct, but the scale doesn't match that in the paper.
 
 ##
 # Try to recreate estimated sensitives for the ishigami function
 
- # [0.208, 0.391, 0.156, 0.060] from the paper
-sample_size = 512
+analytical_values = [0.208, 0.391, 0.156, 0.060] # from Plischke et al. (2013)
+sample_size = 4096
 X, Y = create_ishigami_samples(sample_size)
-delta, delta_adjusted, delta_low, delta_high = delta_moment_analyze(X, Y, Ygrid_length=110, num_classes=10)
+delta, delta_adjusted, delta_low, delta_high = delta_moment(X, Y, Ygrid_length=110, num_classes=10)
 
-(delta_low .<  [0.208, 0.391, 0.156, 0.060]).== ([0.208, 0.391, 0.156, 0.060] .< delta_high)
-
+(delta_low .< analytical_values).== (analytical_values .< delta_high)
 
 #################
 ## Benchmarking
@@ -83,8 +82,8 @@ for (index, sample_size) in enumerate(sample_sizes)
         println(index, " out of ", length(sample_sizes))
 
         X, Y = create_ishigami_samples(sample_size)
-        non_multi_threaded_benchmark = @benchmark delta_moment_analyze($X, $Y)
-        multi_threaded_benchmark = @benchmark delta_moment_analyze_mutlithreaded($X, $Y)
+        non_multi_threaded_benchmark = @benchmark _delta_moment_non_multi($X, $Y)
+        multi_threaded_benchmark = @benchmark delta_moment($X, $Y)
 
         non_multi_threaded_times[index] = time(non_multi_threaded_benchmark)
         non_multi_threaded_allocs[index] = allocs(non_multi_threaded_benchmark)
@@ -144,6 +143,6 @@ savefig("./18337FinalProject/plots/delta_allocations.png")
 
 ## Flame graph
 
-@profile for i in 1:10 delta_moment_analyze(X, Y, Ygrid_length=110, num_classes=10) end
+@profile for i in 1:10 delta_moment(X, Y) end
 Juno.profiler()
 Profile.clear()

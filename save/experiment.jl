@@ -1,9 +1,13 @@
 using KernelDensity
 Y = [i^2 for i in 1:100]
-grid = range(minimum(Y), maximum(Y), length=100)
-fy = kde(Y, grid).density
-print(fy[1:5])
+my_grid = range(minimum(Y), maximum(Y), length=100)
+fy = kde(Y, my_grid).density
+fy[1:5]
 
+
+
+fy2 =  pdf(kde(Y), my_grid)
+fy2[1:5]
 
 
 using KernelDensityEstimate
@@ -20,5 +24,5 @@ p100 = kde!([randn(50);10.0.+2*randn(50)])
 using KernelDensity
 Y = [i for i in 1:10]
 grid = range(minimum(Y), maximum(Y), length=10)
-fy = kde(Y, grid).density
+fy = pdf(kde(Y), grid)
 print(fy)

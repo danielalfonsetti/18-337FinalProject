@@ -900,6 +900,12 @@ git-tree-sha1 = "8d37028ee57882e08563d3a94669673c2b337487"
 uuid = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 version = "0.3.1"
 
+[[NumericalIntegration]]
+deps = ["InteractiveUtils", "LinearAlgebra", "Logging", "Test"]
+git-tree-sha1 = "71a5bf35469ec57e1bfdeec7dbb5757e51949bbb"
+uuid = "e7bfaba1-d571-5449-8927-abc22e82249b"
+version = "0.2.0"
+
 [[Observables]]
 git-tree-sha1 = "635fe10760447cfa86f5118edf2f47eb864fb495"
 uuid = "510215fc-4207-5dde-b226-833fc4488ee2"

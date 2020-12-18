@@ -86,26 +86,6 @@ end
 # This functon is an exact copy of the function above,
 # except its not multi threaded, and is simply being used for benchmarking comparisons.
 function _EASI_non_multi(X::AbstractArray, Y::AbstractArray, M::Integer=10)
-    """
-    param: X
-        pre-sampled model inputs.
-        Each row corresponds to one input vector.
-    param: Y
-        A vector of precomputed model outputs.
-    param: M
-        Maximum harmonic of the input frequency
-        (which is always w=1 in this method) for which the output
-        power spectrum is analyzed for.
-    return:
-        A 2-tuple of vectors of size K, where K is the number of factors
-        (i.e. the number of columns in X).
-
-        The first vector contains the estimated fraction of variance for
-        each model input contributes to the output.
-
-        The second vector is a bias-crrected version of the first.
-    """
-
     # K is the number of variables, N is the number of simulations
     N, K = size(X, 1), size(X, 2)
     sensitivites = zeros(K)
