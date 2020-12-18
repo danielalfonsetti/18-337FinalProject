@@ -24,7 +24,7 @@ fig3_adj_delta_95high = zeros(length(sample_sizes))
 for (index, sample_size) in enumerate(sample_sizes)
         println(index, " out of ", length(sample_sizes))
         X, Y = create_ishigami_samples(sample_size)
-        res = delta_moment(X[:,4], Y, Ygrid_length=2048, num_classes=10)
+        res = delta_moment(X[:,4], Y, Ygrid_length=110, num_classes=50)
         fig3_deltas[index], fig3_adjusted_deltas[index], fig3_adj_delta_95low[index], fig3_adj_delta_95high[index] = res[1][1], res[2][1], res[3][1], res[4][1]
 end
 
@@ -53,17 +53,6 @@ plot!(
 savefig("./18337FinalProject/plots/delta_ishigami.png")
 
 # Trend is correct, but the scale doesn't match that in the paper.
-
-##
-# Try to recreate estimated sensitives for the ishigami function
-
-analytical_values = [0.208, 0.391, 0.156, 0.060] # from Plischke et al. (2013)
-sample_size = 4096
-X, Y = create_ishigami_samples(sample_size)
-delta, delta_adjusted, delta_low, delta_high = delta_moment(X, Y, Ygrid_length=110, num_classes=10)
-
-(delta_low .< analytical_values).== (analytical_values .< delta_high)
-
 #################
 ## Benchmarking
 #################
@@ -141,8 +130,59 @@ plot!(sample_sizes, multi_threaded_allocs, markershape=:circle, label="Multithre
 savefig("./18337FinalProject/plots/delta_allocations.png")
 
 
+
+## How does increasing the number of bootstrap samples increase time?
+
+sample_size = 100
+X, Y = create_ishigami_samples(sample_size)
+num_boot_samples_vec = 0:50:500
+num_boot_samples_times = zeros(length(num_boot_samples_vec))
+for (index, num_boot_samples) in enumerate(num_boot_samples_vec)
+        println(index, " out of ", length(num_boot_samples_vec))
+        bench_res = @benchmark delta_moment_non_multi($X, $Y, num_resamples=$num_boot_samples, num_classes=5) evals=2 samples=2
+        num_boot_samples_times[index] = time(bench_res)
+end
+
+
+plot(
+        num_boot_samples_vec,
+        num_boot_samples_times,
+        legend=nothing,
+        markershape=:circle,
+        xticks = (num_boot_samples_vec, num_boot_samples_vec),
+        title="Time vs Number of Bootstrap Samples \n for Delta-Moment on Ishigami Function"
+)
+yaxis!("Time (ns)")
+xaxis!("Number of Bootstrap samples")
+savefig("./18337FinalProject/plots/delta_bootstrap_increase.png")
+
+
+
 ## Flame graph
 
-@profile for i in 1:10 delta_moment(X, Y) end
+sample_size = 500
+X, Y = create_ishigami_samples(sample_size)
+@profile for i in 1:100 delta_moment_non_multi(X, Y, num_resamples=0, num_classes=10) end
 Juno.profiler()
 Profile.clear()
+
+
+
+
+
+##
+# Try to recreate estimated sensitives for the ishigami function
+
+# observed_values = [0.208, 0.391, 0.156, 0.060] # from Plischke et al. (2013)
+#
+# delta_repetitions = zeros(4, 4)
+# for i in 1:4
+#         sample_size = 4096
+#         X, Y = create_ishigami_samples(sample_size)
+#         delta, delta_adjusted, delta_low, delta_high = delta_moment(X, Y, Ygrid_length=110, num_classes=10)
+#         delta_repetitions[i,:] = delta
+# end
+#
+# mapslices(mean, delta_repetitions, dims=1)
+#
+# (delta_low .< observed_values).== (observed_values .< delta_high)
