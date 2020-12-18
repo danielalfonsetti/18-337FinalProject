@@ -19,12 +19,27 @@ function create_function_of_sobol(ps)
     return f
 end
 
+function ishigami(X)
+    """
+        Ishigami function. Takes a vector, returns a scalar.
+    """
+    X1, X2, X3, X4 = X
+    Y = sin(X1) + 7*sin(X2)^2 + 0.1*X3^4*sin(X1)
+    return Y
+end
 
 
+function create_ishigami_samples(sample_size)
+    """
+        Create sample input vectors for the ishigami function
+        and return 
+    """
+    X = rand(Uniform(-pi, pi), sample_size, 4)
+    Y = zeros(sample_size)
+    for sample_num in 1:sample_size
+        ishigami_input = X[sample_num, :]
+        Y[sample_num] = ishigami(ishigami_input)
+    end
 
-
-# num_experiments = 50
-# experiments = zeros(num_experiments, 8)
-# for i in 1:num_experiments
-#     experiments[i,:] = RBD_FAST_multi(sobol_function1, 10000, [1, 1, 1, 1, 2, 2, 2, 2], [11, 35])
-# end
+    return X, Y
+end

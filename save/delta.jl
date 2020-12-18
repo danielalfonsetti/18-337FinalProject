@@ -1,6 +1,14 @@
-using KernelDensity, StatsBase, Trapz, Random, Distributions, Plots, BenchmarkTools
-# https://www.sciencedirect.com/science/article/pii/S0377221712008995
-# https://github.com/SALib/SALib/blob/master/src/SALib/analyze/delta.py
+using KernelDensity, StatsBase, Trapz, Random, Distributions
+
+"""
+The code here is based on the theory presented in
+
+        Plischke, E., E. Borgonovo, and C. L. Smith (2013). "Global
+        sensitivity measures from given data." European Journal of
+        Operational Research, 226(3):536-550
+
+and the python implementation of delta-moment in python's Sensitivty Analysis Library ("SALib")
+"""
 
 function calc_delta(Xi, Y, Ygrid, class_cutoffs)
 
@@ -242,7 +250,6 @@ function delta_moment_analyze(X_matrix, Y; num_resamples=500, conf_level=0.95, s
 end
 
 
-
 function delta_moment_analyze2(X_matrix, Y; num_resamples=500, conf_level=0.95, seed=nothing, Ygrid_length=2048, num_classes=nothing)
 
         if seed != nothing
@@ -348,7 +355,6 @@ function delta_moment_analyze_mutlithreaded(X_matrix, Y; num_resamples=500, conf
                 delta = calc_delta(Xi, Y, Ygrid, class_cutoffs)
                 deltas[factor_num] = delta
 
-
                 # eq. 30, bias reduction via bootstrapping.
                 d = zeros(num_resamples)
                 r = rand(1:N, num_resamples, N)
@@ -367,204 +373,3 @@ function delta_moment_analyze_mutlithreaded(X_matrix, Y; num_resamples=500, conf
 
         return deltas, adjusted_deltas, adjusted_deltas_low, adjusted_deltas_high
 end
-
-
-
-function ishigami(X)
-        """
-                Ishigami function. Takes a vector, returns a scalar.
-                Saltelli et al., 2004
-        """
-        X1, X2, X3, X4 = X
-        Y = sin(X1) + 7*sin(X2)^2 + 0.1*X3^4*sin(X1)
-        return Y
-end
-
-
-function create_ishigami_samples(sample_size)
-
-        X = rand(Uniform(-pi, pi), sample_size, 4)
-        Y = zeros(sample_size)
-        for sample_num in 1:sample_size
-                ishigami_input = X[sample_num, :]
-                Y[sample_num] = ishigami(ishigami_input)
-        end
-        return X, Y
-end
-
-##
-# Multi-Threading By Factors Time Advantage
-
-sample_sizes = 2 .^ [i for i in 1:14]
-
-non_multi_threaded_times = zeros(length(sample_sizes))
-non_multi_threaded_allocs = zeros(length(sample_sizes))
-non_multi_threaded_memory = zeros(length(sample_sizes))
-multi_threaded_times = zeros(length(sample_sizes))
-multi_threaded_allocs = zeros(length(sample_sizes))
-multi_threaded_memory = zeros(length(sample_sizes))
-
-for (index, sample_size) in enumerate(sample_sizes)
-        println(index)
-        X, Y = create_ishigami_samples(sample_size)
-        non_multi_threaded_benchmark = @benchmark delta_moment_analyze($X, $Y)
-        multi_threaded_benchmark = @benchmark delta_moment_analyze_mutlithreaded($X, $Y)
-
-        non_multi_threaded_times[index] = time(non_multi_threaded_benchmark)
-        non_multi_threaded_allocs[index] = allocs(non_multi_threaded_benchmark)
-        non_multi_threaded_memory[index] = memory(non_multi_threaded_benchmark)
-        multi_threaded_times[index] = time(multi_threaded_benchmark)
-        multi_threaded_allocs[index] = allocs(multi_threaded_benchmark)
-        multi_threaded_memory[index] = memory(multi_threaded_benchmark)
-end
-
-
-scatter(
-        sample_sizes,
-        non_multi_threaded_times,
-        legend=:topleft,
-        label="Non-multithreaded",
-        xaxis=:log,
-        xticks = (sample_sizes, sample_sizes),
-        title="Delta Moment Estimation Time Benchmarks \n on Ishigami Function"
-)
-yaxis!("Time (ns)")
-xaxis!("Number of Samples")
-scatter!(sample_sizes, multi_threaded_times, label="Multithreaded")
-savefig("./18337FinalProject/plots/delta_times.png")
-
-scatter(
-        sample_sizes,
-        non_multi_threaded_memory,
-        legend=:topleft,
-        label="Non-multithreaded",
-        xaxis=:log,
-        xticks = (sample_sizes, sample_sizes),
-        title="Delta Moment Estimation Memory Benchmarks \n on Ishigami Function"
-)
-yaxis!("Memory (MiB)")
-xaxis!("Number of Samples")
-scatter!(sample_sizes, multi_threaded_memory, label="Multithreaded")
-savefig("./18337FinalProject/plots/delta_memory.png")
-
-
-scatter(
-        sample_sizes,
-        non_multi_threaded_allocs,
-        legend=:topleft,
-        label="Non-multithreaded",
-        xaxis=:log,
-        xticks = (sample_sizes, sample_sizes),
-        title="Delta Moment Estimation Allocation Benchmarks \n on Ishigami Function"
-)
-yaxis!("Number of Allocations")
-xaxis!("Number of Samples")
-scatter!(sample_sizes, multi_threaded_allocs, label="Multithreaded")
-savefig("./18337FinalProject/plots/delta_allocations.png")
-
-
-
-##
-
-###################################
-# Test independence
-X = hcat([i for i in 1:9], [1 for i in 1:9])
-Y = [100, 200, 300, 400, 500, 600, 700, 800, 900]
-deltas, adjusted_deltas, adjusted_deltas_low, adjusted_deltas_high = delta_moment_analyze(X, Y)
-
-
-
-###################################
-# Try to recreate figure 3. # https://www.sciencedirect.com/science/article/pii/S0377221712008995#e0040
-sample_sizes = 2 .^ [i for i in 9:14]
-fig3_deltas = zeros(length(sample_sizes))
-fig3_adjusted_deltas = zeros(length(sample_sizes))
-fig3_adj_delta_95low = zeros(length(sample_sizes))
-fig3_adj_delta_95high = zeros(length(sample_sizes))
-for (index, sample_size) in enumerate(sample_sizes)
-        X, Y = create_ishigami_samples(sample_size)
-        res = delta_moment_analyze(X[:,4], Y, Ygrid_length=110, num_classes=10)
-        fig3_deltas[index], fig3_adjusted_deltas[index], fig3_adj_delta_95low[index], fig3_adj_delta_95high[index] = res[1][1], res[2][1], res[3][1], res[4][1]
-end
-
-
-scatter(
-        sample_sizes,
-        fig3_deltas,
-        label="Deltas",
-        xaxis=:log,
-        xticks = (sample_sizes, sample_sizes),
-        legend=:topright,
-        title="Ishigami Function Inactive Variable Sensitivity Measures"
-)
-yaxis!("Delta Sensitivity Measure")
-xaxis!("Sample Size")
-scatter!(
-        sample_sizes,
-        fig3_adjusted_deltas,
-        label="Bias Corrected Deltas",
-        xaxis=:log,
-        xticks = (sample_sizes, sample_sizes),
-        legend=:topright,
-)
-
-
-# Trend is correct, but the scale is off. Possible due to
-
-###################################
-
-# Try to recreate estimated sensitives for the ishigami function [0.208, 0.391, 0.156, 0.060] from the paper
-sample_size = 512
-X, Y = create_ishigami_samples(sample_size)
-delta, delta_adjusted, delta_low, delta_high = delta_moment_analyze(X, Y, Ygrid_length=110, num_classes=10)
-
-
-(delta_low .<  [0.208, 0.391, 0.156, 0.060]).== ([0.208, 0.391, 0.156, 0.060] .< delta_high)
-
-############################
-using Profile, BenchmarkTools
-
-
-# sample_sizes = 2 .^ [i for i in 9:14]
-sample_sizes = 2 .^ [i for i in 1:9]
-benchmark_time = zeros(length(sample_sizes))
-benchmark_memory = zeros(length(sample_sizes))
-benchmark_allocs = zeros(length(sample_sizes))
-for (index, sample_size) in enumerate(sample_sizes)
-        X, Y = create_ishigami_samples(sample_size)
-        benchmark_res = @benchmark delta_moment_analyze(X, Y, Ygrid_length=110, num_classes=10)
-        benchmark_time[index] = time(benchmark_res)
-        benchmark_memory[index] = memory(benchmark_res)
-        benchmark_allocs[index] = allocs(benchmark_res)
-end
-
-# Profiling
-
-
-
-@profile for i in 1:10 delta_moment_analyze(X, Y, Ygrid_length=110, num_classes=10) end
-Juno.profiler()
-Profile.clear()
-
-
-benchmark_res = @benchmark delta_moment_analyze(X, Y, Ygrid_length=110, num_classes=100)
-
-
-##
-
-# Factor of 2 comparison
-sample_size = 2^14
-X, Y = create_ishigami_samples(sample_size)
-
-@time delta_moment_analyze(X, Y, Ygrid_length=110, num_classes=10, num_resamples=10)
-
-@time delta_moment_analyze2(X, Y, Ygrid_length=110, num_classes=10, num_resamples=10)
-
-
-
-using Profile
-@profile for i in 1:10 delta_moment_analyze2(X, Y, Ygrid_length=110, num_classes=10, num_resamples=10) end
-Juno.profiler()
-Profile.clear()
-
-print("HI")
