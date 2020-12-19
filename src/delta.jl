@@ -62,7 +62,7 @@ function _calc_delta(Xi, Y, Ygrid, class_cutoffs)
 end
 
 
-function delta_moment(X_matrix, Y; num_resamples=500, conf_level=0.95, seed=nothing, Ygrid_length=2048, num_classes=nothing)
+function delta_analyze(X_matrix, Y; num_resamples=500, conf_level=0.95, seed=nothing, Ygrid_length=2048, num_classes=nothing)
         """
         param: X_matrix
                 A 2-dimensional array, where each row contains an input
@@ -152,7 +152,7 @@ end
 
 # This functon is an exact copy of the function above,
 # except its not multi threaded, and is simply being used for benchmarking comparisons.
-function _delta_moment_non_multi(X_matrix, Y; num_resamples=500, conf_level=0.95, seed=nothing, Ygrid_length=2048, num_classes=nothing)
+function _delta_analyze_non_multi(X_matrix, Y; num_resamples=500, conf_level=0.95, seed=nothing, Ygrid_length=2048, num_classes=nothing)
 
         if seed != nothing
                 Random.seed!(seed)

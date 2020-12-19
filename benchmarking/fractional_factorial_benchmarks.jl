@@ -27,6 +27,7 @@ println(variances)
 
 
 ## Flame graph
+Profile.clear()
 @profile for i in 1:1000 _recursive_hadamard(1024) end
 Juno.profiler()
 Profile.clear()
@@ -77,7 +78,7 @@ plot!(ks, expanding_window_method_times, markershape=:circle, label="Expanding W
 savefig("./18337FinalProject/plots/hadamard_time.png")
 
 
-scatter(
+plot(
         ks,
         recursive_method_memory,
         label="Recursive Method",

@@ -1,5 +1,5 @@
 
-using BenchmarkTools, Profile, Gadfly, Cairo, Fontconfig, Distributions
+using BenchmarkTools, Profile, Gadfly, Cairo, Fontconfig, Distributions, Plots
 
 include("../src/EASI.jl")
 include("../src/util.jl")
@@ -8,7 +8,7 @@ include("../src/util.jl")
 ## Testing for correctness ##
 #############################
 
-# Recreate figure 4 in https://www.sciencedirect.com/science/article/pii/S0951832009002579
+# Recreate figure 4 in Plischke (2010)
 
 ps1 = [0, 1, 4.5, 9, 99, 99, 99, 99]
 sobol_function1 = create_function_of_sobol(ps1)
@@ -139,7 +139,7 @@ for (index, sample_size) in enumerate(sample_sizes)
         multi_threaded_memory[index] = memory(multi_threaded_benchmark)
 end
 
-plot(
+Plots.plot(
         sample_sizes,
         non_multi_threaded_times,
         legend=:topleft,
@@ -151,10 +151,10 @@ plot(
 )
 yaxis!("Time (ns)")
 xaxis!("Number of Samples")
-plot!(sample_sizes, multi_threaded_times, markershape=:circle, label="Multithreaded")
+Plots.plot!(sample_sizes, multi_threaded_times, markershape=:circle, label="Multithreaded")
 savefig("./18337FinalProject/plots/EASI_times.png")
 
-plot(
+Plots.plot(
         sample_sizes,
         non_multi_threaded_memory,
         legend=:topleft,
@@ -169,7 +169,7 @@ xaxis!("Number of Samples")
 plot!(sample_sizes, multi_threaded_memory, markershape=:circle, label="Multithreaded")
 savefig("./18337FinalProject/plots/EASI_memory.png")
 
-plot(
+Plots.plot(
         sample_sizes,
         non_multi_threaded_allocs,
         legend=:topleft,
@@ -181,11 +181,24 @@ plot(
 )
 yaxis!("Number of Allocations")
 xaxis!("Number of Samples")
-plot!(sample_sizes, multi_threaded_allocs, markershape=:circle, label="Multithreaded")
+Plots.plot!(sample_sizes, multi_threaded_allocs, markershape=:circle, label="Multithreaded")
 savefig("./18337FinalProject/plots/EASI_allocations.png")
 
 
 ## Flame graph
+
+ps1 = [0, 1, 4.5, 9, 99, 99, 99, 99]
+sobol_function1 = create_function_of_sobol(ps1)
+sample_size = 1000
+
+X = rand(Uniform(0,1), sample_size, length(ps1))
+
+Y = zeros(sample_size)
+for i in 1:sample_size
+    Y[i] = sobol_function1(@view X[i,:])
+end
+
+Profile.clear()
 @profile for i in 1:1000 EASI(X, Y) end
 Juno.profiler()
 Profile.clear()

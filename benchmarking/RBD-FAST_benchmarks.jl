@@ -220,6 +220,8 @@ let
         frequencies = [11, 35]
         group_assignments = [1, 1, 1, 1, 2, 2, 2, 2]
 
+
+        Profile.clear()
         @profile for i in 1:10 RBD_FAST(sobol_function1, 500, group_assignments, frequencies) end
         Juno.profiler()
         Profile.clear()
