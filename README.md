@@ -1,5 +1,8 @@
 # 18337FinalProject
 
+## Abstract
+
+Global sensitivity analysis (GSA) seeks to understand how distributions of the input parameters relate to distributions of the output parameters, and is thus different from local sensitivity analysis which is concerned with measuring sensitivity of the output at specific points of the input. In this project we implement four global sensitivity methods in Julia that have not been implemented previously: fractional factorial sampling, RBD-FAST, EASI, and the delta moment-independent measure. Time and memory benchmarking are performed for each, and numerical experiments from the methods’ corresponding research papers are recreated to help assert correctness when applicable.
 
 ## References
 
